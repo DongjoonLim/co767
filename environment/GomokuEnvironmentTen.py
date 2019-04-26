@@ -1,20 +1,22 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import random
 import math
 import os
+import keras
+import random
+
 size_board = 10
 num_actions = 100
 num_states = 100
 hidden_units = 1000
-mem_threshold = 50000
-batch = 50
-num_epoch = 100
+mem_threshold = 30000
+batch = 100
+num_epoch = 200
 epsilon_disRate = 0.999
 min_epsilon = 0.1
-gamma = 0.9
-learning_rate = 0.2
+gamma = 0.99
+learning_rate = 0.15
 winning_reward = 1
 
 # Set the model
@@ -43,30 +45,19 @@ empty = 0
 BlackStone = 1
 whiteStone = 2
 class GomokuEnvironmentTen():
-
-
 	# Initialize
-
 	def __init__(self, size_board):
 		self.size_board = size_board
 		self.num_states = self.size_board * self.size_board
 		self.state = np.zeros(self.num_states, dtype = np.uint8)
-
-
 	# Reset
-
 	def reset(self):
 		self.state = np.zeros(self.num_states, dtype = np.uint8)
-
-
 	# Get the current state
 
 	def getState(self):
 		return np.reshape(self.state, (1, self.num_states))
-
-
 	# Reverse player and get the current state
-
 	def getStateInverse(self):
 		tempState = self.state.copy()
 		
@@ -77,9 +68,6 @@ class GomokuEnvironmentTen():
 				tempState[i] = BlackStone
 		
 		return np.reshape(tempState, (1, self.num_states))
-
-
-
 	# Get the reward
 	def GetReward(self, player, action):
 	
@@ -121,164 +109,148 @@ class GomokuEnvironmentTen():
 		# Check lower right
 		if( (action % self.size_board < self.size_board - 1) and (action + self.size_board < self.num_states) ):
 			if( self.state[action + 1 + self.size_board] == player ):
-				return 0
-		
+				return 0	
 		return 0
 
-	# Find match
-
-	def CheckMatch(self, player):
+	# Find Consecutive
+	def CheckConsecutive(self, player):
 		for y in range(self.size_board):
 			for x in range(self.size_board):
-			
-
 				# Check right
-				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( x + i >= self.size_board ):
 						break
 	
 					if( self.state[y * self.size_board + x + i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
-
-				
 				# Check left
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( x - i >= self.size_board ):
 						break
 	
 					if( self.state[y * self.size_board + x - i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
-				
 				# check down
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( y + i >= self.size_board ):
 						break
 	
 					if( self.state[(y + i) * self.size_board + x] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
-				
 				# check up
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( y - i >= self.size_board ):
 						break
 	
 					if( self.state[(y - i) * self.size_board + x] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
-				
 				# check lower right diagonal
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( (x + i >= self.size_board) or (y + i >= self.size_board) ):
 						break
 	
 					if( self.state[(y + i) * self.size_board + x + i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
-				
 				# check upper left diagonal
 			
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( (x - i >= self.size_board) or (y - i >= self.size_board) ):
 						break
 	
 					if( self.state[(y - i) * self.size_board + x - i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
-			
 				# check lower left diagonal
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( (x - i < 0) or (y + i >= self.size_board) ):
 						break
 	
 					if( self.state[(y + i) * self.size_board + x - i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 				
 				# check upper right diagonal
-			
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( (x + i < 0) or (y - i >= self.size_board) ):
 						break
 	
 					if( self.state[(y - i) * self.size_board + x + i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 	
 		return False
 
-
-
-
 	# Check if game is over
 
 	def isGameOver(self, player):
-		if( self.CheckMatch(BlackStone) == True ):
+		if( self.CheckConsecutive(BlackStone) == True ):
 			if( player == BlackStone ):
 				return True, winning_reward
 			else:
 				return True, 0
-		elif( self.CheckMatch(whiteStone) == True ):
+		elif( self.CheckConsecutive(whiteStone) == True ):
 			if( player == BlackStone ):
 				return True, 0
 			else:
@@ -289,10 +261,6 @@ class GomokuEnvironmentTen():
 					return False, 0
 			return True, 0
 			
-
-
-
-
 	# Make move
 
 	def makeMove(self, player, action):
@@ -309,8 +277,6 @@ class GomokuEnvironmentTen():
 		
 		return next_state, reward, gameOver
 
-
-
 	# Getting the action
 	def getAction(self, sess, currentState):
 		q = sess.run(output_layer, feed_dict = {X: currentState})
@@ -323,8 +289,6 @@ class GomokuEnvironmentTen():
 			else:
 				q[0, action] = -99999
 	
-
-
 	# Getting the action Randomly
 
 	def getActionRandom(self):

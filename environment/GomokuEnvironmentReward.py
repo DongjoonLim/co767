@@ -1,20 +1,21 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import random
 import math
 import os
+import keras
+import random
 size_board = 15
-num_actions = size_board * size_board
-num_states = size_board * size_board
+num_actions = 225
+num_states = 225
 hidden_units = 1000
 mem_threshold = 50000
-batch = 50
-num_epoch = 100
+batch = 100
+num_epoch = 200
 epsilon_disRate = 0.999
 min_epsilon = 0.1
-gamma = 0.9
-learning_rate = 0.2
+gamma = 0.99
+learning_rate = 0.15
 winning_reward = 1
 
 # Set the model
@@ -125,144 +126,143 @@ class GomokuEnvironmentReward():
 		
 		return 0
 
-	# Find match
+	# Find Consecutive
 
-	def CheckMatch(self, player):
+	def CheckConsecutive(self, player):
 		for y in range(self.size_board):
 			for x in range(self.size_board):
 			
-
 				# Check right
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( x + i >= self.size_board ):
 						break
 	
 					if( self.state[y * self.size_board + x + i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
 				
 				# Check left
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( x - i >= self.size_board ):
 						break
 	
 					if( self.state[y * self.size_board + x - i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
 				
 				# check down
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( y + i >= self.size_board ):
 						break
 	
 					if( self.state[(y + i) * self.size_board + x] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
 				
 				# check up
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( y - i >= self.size_board ):
 						break
 	
 					if( self.state[(y - i) * self.size_board + x] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
 				
 				# check lower right diagonal
 				
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( (x + i >= self.size_board) or (y + i >= self.size_board) ):
 						break
 	
 					if( self.state[(y + i) * self.size_board + x + i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
 				
 				# check upper left diagonal
 			
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( (x - i >= self.size_board) or (y - i >= self.size_board) ):
 						break
 	
 					if( self.state[(y - i) * self.size_board + x - i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 
 			
 				# check lower left diagonal
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( (x - i < 0) or (y + i >= self.size_board) ):
 						break
 	
 					if( self.state[(y + i) * self.size_board + x - i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 				
 				# check upper right diagonal
 			
-				match = 0
+				Consecutive = 0
 				
 				for i in range(5):
 					if( (x + i < 0) or (y - i >= self.size_board) ):
 						break
 	
 					if( self.state[(y - i) * self.size_board + x + i] == player ):
-						match += 1
+						Consecutive += 1
 					else:
 						break
 
-					if( match >= 5 ):
+					if( Consecutive >= 5 ):
 						return True
 	
 		return False
@@ -273,12 +273,12 @@ class GomokuEnvironmentReward():
 	# Check if game is over
 
 	def isGameOver(self, player):
-		if( self.CheckMatch(BlackStone) == True ):
+		if( self.CheckConsecutive(BlackStone) == True ):
 			if( player == BlackStone ):
 				return True, winning_reward
 			else:
 				return True, 0
-		elif( self.CheckMatch(whiteStone) == True ):
+		elif( self.CheckConsecutive(whiteStone) == True ):
 			if( player == BlackStone ):
 				return True, 0
 			else:
